@@ -89,6 +89,22 @@ playerImg.src = 'icons/player.png';
 
 function drawPlayer() {
     ctx.save();
+    // Draw shield circle if active and timer > 0
+    if (shieldActive && (Date.now() < shieldEndTime)) {
+        ctx.beginPath();
+        ctx.arc(
+            player.x + player.width / 2,
+            player.y + player.height / 2,
+            player.width / 2 + 10,
+            0,
+            Math.PI * 2
+        );
+        ctx.strokeStyle = '#00f';
+        ctx.lineWidth = 5;
+        ctx.globalAlpha = 0.5;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+    }
     ctx.drawImage(
         playerImg,
         player.x,
@@ -150,8 +166,18 @@ function drawHearts() {
         ctx.bezierCurveTo(x - 30, y + 10, x, y + 30, x, y + 20);
         ctx.bezierCurveTo(x, y + 30, x + 30, y + 10, x + 20, y);
         ctx.bezierCurveTo(x + 10, y - 10, x, y, x, y);
-        ctx.fillStyle = '#f00';
+        ctx.fillStyle = (shieldActive && (Date.now() < shieldEndTime)) ? '#00f' : '#f00';
         ctx.fill();
+        ctx.restore();
+    }
+    // Draw shield timer below hearts if active
+    if (shieldActive && (Date.now() < shieldEndTime)) {
+        const secondsLeft = Math.ceil((shieldEndTime - Date.now()) / 1000);
+        ctx.save();
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#00f';
+        ctx.textAlign = 'right';
+        ctx.fillText('Shield: ' + secondsLeft + 's', canvas.width - 30, 65);
         ctx.restore();
     }
 }
@@ -260,6 +286,10 @@ function updateExplosions() {
             explosions.splice(i, 1);
         }
     }
+    // Update shield state
+    if (shieldActive && (Date.now() >= shieldEndTime)) {
+        shieldActive = false;
+    }
 }
 
 function drawExplosions() {
@@ -290,10 +320,12 @@ function checkCollisions() {
             bug.y + bug.height > player.y
         ) {
             bugs.splice(i, 1);
-            lives--;
-            if (lives <= 0) {
-                lives = 0;
-                gameOver = true;
+            if (!(shieldActive && (Date.now() < shieldEndTime))) {
+                lives--;
+                if (lives <= 0) {
+                    lives = 0;
+                    gameOver = true;
+                }
             }
         }
     }
@@ -329,6 +361,10 @@ function checkCollisions() {
             if (p.type === 'red' && lives < MAX_LIVES) {
                 lives++;
             }
+            if (p.type === 'blue') {
+                shieldActive = true;
+                shieldEndTime = Date.now() + SHIELD_DURATION_MS;
+            }
             powerups.splice(i, 1);
         }
     }
@@ -341,6 +377,8 @@ function resetGame() {
     bullets.length = 0;
     explosions.length = 0;
     powerups.length = 0;
+    shieldActive = false;
+    shieldEndTime = 0;
     score = 0;
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
@@ -375,5 +413,10 @@ function gameLoop() {
     }
     requestAnimationFrame(gameLoop);
 }
+
+// Shield state
+let shieldActive = false;
+let shieldEndTime = 0;
+const SHIELD_DURATION_MS = 5 * 1000; // 10000 seconds in ms
 
 gameLoop();
