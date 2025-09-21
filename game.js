@@ -1,7 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
 // Game constants
+// ...existing code...
 const PLAYER_WIDTH = 40;
 const PLAYER_HEIGHT = 40;
 const PLAYER_SPEED = 5;
@@ -83,31 +83,35 @@ function drawBullets() {
     });
 }
 
+// Load player image
+const playerImg = new Image();
+playerImg.src = 'icons/player.png';
+
 function drawPlayer() {
-    // Draw spaceship body
     ctx.save();
-    ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-    ctx.beginPath();
-    ctx.moveTo(0, -player.height / 2); // Nose
-    ctx.lineTo(-player.width / 2, player.height / 2); // Left wing
-    ctx.lineTo(0, player.height / 4); // Tail
-    ctx.lineTo(player.width / 2, player.height / 2); // Right wing
-    ctx.closePath();
-    ctx.fillStyle = '#0ff';
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    // Draw cockpit
-    ctx.beginPath();
-    ctx.arc(0, -player.height / 4, player.width / 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    // Draw VATIT logo
-    ctx.font = 'bold 12px Arial';
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText('VATIT', 0, player.height / 8);
+    // Draw shield circle if active and timer > 0
+    if (shieldActive && (Date.now() < shieldEndTime)) {
+        ctx.beginPath();
+        ctx.arc(
+            player.x + player.width / 2,
+            player.y + player.height / 2,
+            player.width / 2 + 10,
+            0,
+            Math.PI * 2
+        );
+        ctx.strokeStyle = '#00f';
+        ctx.lineWidth = 5;
+        ctx.globalAlpha = 0.5;
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+    }
+    ctx.drawImage(
+        playerImg,
+        player.x,
+        player.y,
+        player.width,
+        player.height
+    );
     ctx.restore();
 }
 
@@ -118,11 +122,31 @@ let gameOver = false;
 
 // Enemy (bug) mechanics
 const bugs = [];
-const BUG_WIDTH = 30;
-const BUG_HEIGHT = 30;
+const BUG_WIDTH = 60;
+const BUG_HEIGHT = 60;
 const BUG_SPEED = 3;
 let bugSpawnTimer = 0;
 const BUG_SPAWN_INTERVAL = 60; // frames
+
+// Load bug image
+const bugImg = new Image();
+bugImg.src = 'icons/bug.png';
+
+// Powerup mechanics
+const powerups = [];
+const POWERUP_WIDTH = 40;
+const POWERUP_HEIGHT = 40;
+const POWERUP_SPEED = 4;
+const POWERUP_SPAWN_INTERVAL = 180; // frames
+let powerupSpawnTimer = 0;
+
+// Load powerup images
+const powerupRedImg = new Image();
+powerupRedImg.src = 'icons/powerupRed.png';
+const powerupBlueImg = new Image();
+powerupBlueImg.src = 'icons/powerupBlue.png';
+const powerupGreenImg = new Image();
+powerupGreenImg.src = 'icons/powerupGreen.png';
 
 // Score
 let score = 0;
@@ -142,8 +166,18 @@ function drawHearts() {
         ctx.bezierCurveTo(x - 30, y + 10, x, y + 30, x, y + 20);
         ctx.bezierCurveTo(x, y + 30, x + 30, y + 10, x + 20, y);
         ctx.bezierCurveTo(x + 10, y - 10, x, y, x, y);
-        ctx.fillStyle = '#f00';
+        ctx.fillStyle = (shieldActive && (Date.now() < shieldEndTime)) ? '#00f' : '#f00';
         ctx.fill();
+        ctx.restore();
+    }
+    // Draw shield timer below hearts if active
+    if (shieldActive && (Date.now() < shieldEndTime)) {
+        const secondsLeft = Math.ceil((shieldEndTime - Date.now()) / 1000);
+        ctx.save();
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#00f';
+        ctx.textAlign = 'right';
+        ctx.fillText('Shield: ' + secondsLeft + 's', canvas.width - 30, 65);
         ctx.restore();
     }
 }
@@ -173,23 +207,61 @@ function updateBugs() {
     }
 }
 
+function spawnPowerup() {
+    // Randomly choose left or right
+    const fromLeft = Math.random() < 0.5;
+    // Randomly choose powerup type
+    const types = ['red', 'blue', 'green'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    powerups.push({
+        x: fromLeft ? -POWERUP_WIDTH : canvas.width,
+        y: Math.random() * (canvas.height - POWERUP_HEIGHT - 100) + 50,
+        width: POWERUP_WIDTH,
+        height: POWERUP_HEIGHT,
+        dx: fromLeft ? POWERUP_SPEED : -POWERUP_SPEED,
+        type
+    });
+}
+
+function updatePowerups() {
+    powerupSpawnTimer++;
+    if (powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL && !gameOver) {
+        spawnPowerup();
+        powerupSpawnTimer = 0;
+    }
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        powerups[i].x += powerups[i].dx;
+        // Remove powerup if off screen
+        if (powerups[i].x < -POWERUP_WIDTH || powerups[i].x > canvas.width + POWERUP_WIDTH) {
+            powerups.splice(i, 1);
+        }
+    }
+}
+
+function drawPowerups() {
+    powerups.forEach(powerup => {
+        let img;
+        if (powerup.type === 'red') img = powerupRedImg;
+        else if (powerup.type === 'blue') img = powerupBlueImg;
+        else if (powerup.type === 'green') img = powerupGreenImg;
+        if (img) {
+            ctx.save();
+            ctx.drawImage(img, powerup.x, powerup.y, powerup.width, powerup.height);
+            ctx.restore();
+        }
+    });
+}
+
 function drawBugs() {
     bugs.forEach(bug => {
         ctx.save();
-        ctx.translate(bug.x + bug.width / 2, bug.y + bug.height / 2);
-        // Draw bug body
-        ctx.beginPath();
-        ctx.arc(0, 0, bug.width / 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#0f0';
-        ctx.fill();
-        // Draw bug legs
-        ctx.strokeStyle = '#333';
-        for (let i = -1; i <= 1; i++) {
-            ctx.beginPath();
-            ctx.moveTo(i * 10, 0);
-            ctx.lineTo(i * 15, 10);
-            ctx.stroke();
-        }
+        ctx.drawImage(
+            bugImg,
+            bug.x,
+            bug.y,
+            bug.width,
+            bug.height
+        );
         ctx.restore();
     });
 }
@@ -213,6 +285,10 @@ function updateExplosions() {
         if (explosions[i].frame > EXPLOSION_DURATION) {
             explosions.splice(i, 1);
         }
+    }
+    // Update shield state
+    if (shieldActive && (Date.now() >= shieldEndTime)) {
+        shieldActive = false;
     }
 }
 
@@ -244,10 +320,12 @@ function checkCollisions() {
             bug.y + bug.height > player.y
         ) {
             bugs.splice(i, 1);
-            lives--;
-            if (lives <= 0) {
-                lives = 0;
-                gameOver = true;
+            if (!(shieldActive && (Date.now() < shieldEndTime))) {
+                lives--;
+                if (lives <= 0) {
+                    lives = 0;
+                    gameOver = true;
+                }
             }
         }
     }
@@ -271,6 +349,25 @@ function checkCollisions() {
             }
         }
     }
+    // Check player-powerup collision
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        if (
+            p.x < player.x + player.width &&
+            p.x + p.width > player.x &&
+            p.y < player.y + player.height &&
+            p.y + p.height > player.y
+        ) {
+            if (p.type === 'red' && lives < MAX_LIVES) {
+                lives++;
+            }
+            if (p.type === 'blue') {
+                shieldActive = true;
+                shieldEndTime = Date.now() + SHIELD_DURATION_MS;
+            }
+            powerups.splice(i, 1);
+        }
+    }
 }
 
 function resetGame() {
@@ -279,6 +376,9 @@ function resetGame() {
     bugs.length = 0;
     bullets.length = 0;
     explosions.length = 0;
+    powerups.length = 0;
+    shieldActive = false;
+    shieldEndTime = 0;
     score = 0;
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
@@ -290,12 +390,14 @@ function gameLoop() {
         updatePlayer();
         updateBullets();
         updateBugs();
+        updatePowerups();
         updateExplosions();
         checkCollisions();
     }
     drawPlayer();
     drawBullets();
     drawBugs();
+    drawPowerups();
     drawExplosions();
     drawHearts();
     drawScore();
@@ -311,5 +413,10 @@ function gameLoop() {
     }
     requestAnimationFrame(gameLoop);
 }
+
+// Shield state
+let shieldActive = false;
+let shieldEndTime = 0;
+const SHIELD_DURATION_MS = 5 * 1000; // 10000 seconds in ms
 
 gameLoop();
