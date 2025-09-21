@@ -217,6 +217,8 @@ function checkCollisions() {
             if (p.type === 'green') {
                 bulletLineCount++;
             }
+            // Add inverse color explosion at powerup center
+            addExplosion(p.x + p.width, p.y + p.height, 'inverse');
             powerups.splice(i, 1);
         }
     }

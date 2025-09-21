@@ -44,7 +44,7 @@ export const explosions = [];
 export const EXPLOSION_DURATION = 20;
 
 export function addExplosion(x, y) {
-    explosions.push({ x, y, frame: 0 });
+    explosions.push({ x, y, frame: 0, color: null });
 }
 
 export function updateExplosions() {
@@ -62,11 +62,11 @@ export function drawExplosions(ctx) {
         ctx.globalAlpha = 1 - explosion.frame / EXPLOSION_DURATION;
         ctx.beginPath();
         ctx.arc(explosion.x, explosion.y, 20 * (1 - explosion.frame / EXPLOSION_DURATION), 0, Math.PI * 2);
-        ctx.fillStyle = '#ff0';
+        ctx.fillStyle = explosion.color === 'inverse' ? '#0ff' : '#ff0';
         ctx.fill();
         ctx.beginPath();
         ctx.arc(explosion.x, explosion.y, 10 * (1 - explosion.frame / EXPLOSION_DURATION), 0, Math.PI * 2);
-        ctx.fillStyle = '#f00';
+        ctx.fillStyle = explosion.color === 'inverse' ? '#00f' : '#f00';
         ctx.fill();
         ctx.restore();
     });
