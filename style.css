@@ -10,4 +10,8 @@ body {
     background: #111;
     border: 2px solid #fff;
     display: block;
+    width: 90vw;
+    height: 90vh;
+    max-width: 900px;
+    max-height: 900px;
 }
