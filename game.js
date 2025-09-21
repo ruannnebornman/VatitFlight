@@ -233,6 +233,7 @@ function gameLoop() {
         secondsAlive = Math.floor((Date.now() - startTime) / 1000);
         window._scoreSaved = false;
     }
+    drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas);
     drawScore(ctx, score, secondsAlive);
 
 // Save score to scoreboard.json
