@@ -36,6 +36,46 @@ h1 {
     align-items: center;
     gap: 8px;
 }
+/* Scoreboard styles */
+.scoreboard {
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    font-family: 'Orbitron', Arial, sans-serif;
+    border: 2px solid #0ff;
+    border-radius: 12px;
+    margin-left: 32px;
+    margin-top: 0;
+    padding: 24px 16px;
+    min-width: 260px;
+    max-width: 320px;
+    min-height: 200px;
+    box-shadow: 0 0 16px #0ff;
+    font-size: 1.1em;
+}
+.scoreboard h2 {
+    color: #0ff;
+    font-size: 1.3em;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.scoreboard .score-entry {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #222;
+}
+.scoreboard .score-entry:last-child {
+    border-bottom: none;
+}
+.scoreboard .score-name {
+    color: #fff;
+    font-weight: bold;
+}
+.scoreboard .score-score {
+    color: #0f0;
+}
+.scoreboard .score-time {
+    color: #ff0;
+}
 .icon {
     width: 32px;
     height: 32px;

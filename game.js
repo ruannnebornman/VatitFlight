@@ -9,6 +9,55 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game state
+// Player name logic
+function renderScoreboard() {
+    let scores = [];
+    // Try Node.js fs first
+    if (typeof require === 'function') {
+        try {
+            const fs = require('fs');
+            const path = 'scoreboard.json';
+            if (fs.existsSync(path)) {
+                scores = JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+        } catch (e) {
+            console.error('Failed to load scores:', e);
+        }
+    } else {
+        try {
+            scores = JSON.parse(localStorage.getItem('vatitflight_scores') || '[]');
+        } catch {}
+    }
+    const scoreboardDiv = document.getElementById('scoreboard');
+    if (!scoreboardDiv) return;
+    let html = '<h2>Scoreboard</h2>';
+    if (scores.length === 0) {
+        html += '<div>No scores yet!</div>';
+    } else {
+        scores.sort((a, b) => b.score - a.score);
+        scores.slice(0, 5).forEach(entry => {
+            html += `<div class="score-entry">
+                <span class="score-name">${entry.name}</span><br>
+                <span class="score-score">Score: ${entry.score}</span><br>
+                <span class="score-time">Time: ${entry.time}s</span>
+            </div>`;
+        });
+    }
+    scoreboardDiv.innerHTML = html;
+}
+let playerName = null;
+function getPlayerName() {
+    playerName = localStorage.getItem('vatitflight_player_name');
+    if (!playerName) {
+        playerName = prompt('Enter your name for the scoreboard:');
+        if (playerName) {
+            localStorage.setItem('vatitflight_player_name', playerName);
+        } else {
+            playerName = 'Anonymous';
+        }
+    }
+    return playerName;
+}
 let endTime = null;
 let lives = 3;
 const MAX_LIVES = 3;
@@ -44,7 +93,9 @@ const powerupGreenImg = new Image();
 powerupGreenImg.src = 'icons/powerupGreen.png';
 
 // Initialize game objects
+getPlayerName();
 resetGame();
+renderScoreboard();
 
 function resetGame() {
     lives = MAX_LIVES;
@@ -171,12 +222,63 @@ function gameLoop() {
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
     let secondsAlive;
-        if (gameOver && endTime) {
-            secondsAlive = Math.floor((endTime - startTime) / 1000);
-        } else {
-            secondsAlive = Math.floor((Date.now() - startTime) / 1000);
+    if (gameOver && endTime) {
+        secondsAlive = Math.floor((endTime - startTime) / 1000);
+        // Save score to scoreboard.json if not already saved for this game over
+        if (!window._scoreSaved) {
+            window._scoreSaved = true;
+            saveScore(playerName, score, secondsAlive);
         }
+    } else {
+        secondsAlive = Math.floor((Date.now() - startTime) / 1000);
+        window._scoreSaved = false;
+    }
     drawScore(ctx, score, secondsAlive);
+
+// Save score to scoreboard.json
+function saveScore(name, score, time) {
+    // Try to use Node.js fs if available (for local dev)
+    function insertScore(scores, entry) {
+        scores.push(entry);
+        scores.sort((a, b) => b.score - a.score);
+        if (scores.length > 5) scores.length = 5;
+        return scores;
+    }
+    if (typeof require === 'function') {
+        try {
+            const fs = require('fs');
+            const path = 'scoreboard.json';
+            let scores = [];
+            if (fs.existsSync(path)) {
+                scores = JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+            // Only save if score is high enough
+            if (scores.length < 5 || score > (scores[4]?.score ?? -Infinity)) {
+                scores = insertScore(scores, { name, score, time, date: new Date().toISOString() });
+            }
+            // Always keep only top 5
+            scores.sort((a, b) => b.score - a.score);
+            if (scores.length > 5) scores.length = 5;
+            fs.writeFileSync(path, JSON.stringify(scores, null, 2));
+        } catch (e) {
+            console.error('Failed to save score:', e);
+        }
+    } else {
+        // Fallback: save to localStorage
+        let scores = [];
+        try {
+            scores = JSON.parse(localStorage.getItem('vatitflight_scores') || '[]');
+        } catch {}
+        if (scores.length < 5 || score > (scores[4]?.score ?? -Infinity)) {
+            scores = insertScore(scores, { name, score, time, date: new Date().toISOString() });
+        }
+        // Always keep only top 5
+        scores.sort((a, b) => b.score - a.score);
+        if (scores.length > 5) scores.length = 5;
+        localStorage.setItem('vatitflight_scores', JSON.stringify(scores));
+    }
+    renderScoreboard();
+}
     if (gameOver) {
         ctx.save();
         ctx.font = 'bold 48px Arial';
