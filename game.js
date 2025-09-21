@@ -1,6 +1,6 @@
 // Import modules
 import { PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player, updatePlayer, drawPlayer } from './player.js';
-import { BUG_WIDTH, BUG_HEIGHT, bugSpeed, lastSpeedIncreaseTime, bugSpawnTimer, bugSpawnInterval, bugs, spawnBug, updateBugs, drawBugs } from './bugs.js';
+import * as bugsModule from './bugs.js';
 import { POWERUP_WIDTH, POWERUP_HEIGHT, POWERUP_SPEED, POWERUP_SPAWN_INTERVAL, powerupSpawnTimer, powerups, spawnPowerup, updatePowerups, drawPowerups } from './powerups.js';
 import { BULLET_WIDTH, BULLET_HEIGHT, BULLET_SPEED, bullets, shootBullet, updateBullets, drawBullets } from './bullets.js';
 import { drawHearts, drawScore, explosions, EXPLOSION_DURATION, addExplosion, updateExplosions, drawExplosions } from './ui.js';
@@ -9,12 +9,65 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game state
+// Player name logic
+function renderScoreboard() {
+    let scores = [];
+    // Try Node.js fs first
+    if (typeof require === 'function') {
+        try {
+            const fs = require('fs');
+            const path = 'scoreboard.json';
+            if (fs.existsSync(path)) {
+                scores = JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+        } catch (e) {
+            console.error('Failed to load scores:', e);
+        }
+    } else {
+        try {
+            scores = JSON.parse(localStorage.getItem('vatitflight_scores') || '[]');
+        } catch {}
+    }
+    const scoreboardDiv = document.getElementById('scoreboard');
+    if (!scoreboardDiv) return;
+    let html = '<h2>Scoreboard</h2>';
+    if (scores.length === 0) {
+        html += '<div>No scores yet!</div>';
+    } else {
+    scores.sort((a, b) => b.score - a.score);
+    scores.slice(0, 7).forEach(entry => {
+            html += `<div class="score-entry">
+                <span class="score-name">${entry.name}</span><br>
+                <span class="score-score">Score: ${entry.score}</span><br>
+                <span class="score-time">Time: ${entry.time}s</span>
+            </div>`;
+        });
+    }
+    scoreboardDiv.innerHTML = html;
+}
+let playerName = null;
+function getPlayerName() {
+    playerName = localStorage.getItem('vatitflight_player_name');
+    if (!playerName) {
+        playerName = prompt('Enter your name for the scoreboard:');
+        if (playerName) {
+            localStorage.setItem('vatitflight_player_name', playerName);
+        } else {
+            playerName = 'Anonymous';
+        }
+    }
+    return playerName;
+}
+let endTime = null;
 let lives = 3;
 const MAX_LIVES = 3;
 let gameOver = false;
 let shooting = false;
 let lastShotTime = 0;
-const SHOOT_INTERVAL = 150; // ms between shots
+const BASE_SHOOT_INTERVAL = 75; // ms between shots
+
+// Bullet line state
+let bulletLineCount = 1;
 
 // Shield state
 let shieldActive = false;
@@ -23,6 +76,9 @@ const SHIELD_DURATION_MS = 5 * 1000; // 5000 seconds in ms
 
 // Score
 let score = 0;
+
+// Track time alive
+let startTime = Date.now();
 
 // Load images
 const playerImg = new Image();
@@ -37,27 +93,33 @@ const powerupGreenImg = new Image();
 powerupGreenImg.src = 'icons/powerupGreen.png';
 
 // Initialize game objects
+getPlayerName();
 resetGame();
+renderScoreboard();
 
 function resetGame() {
     lives = MAX_LIVES;
     gameOver = false;
-    bugs.length = 0;
+    bugsModule.bugs.length = 0;
     bullets.length = 0;
     explosions.length = 0;
     powerups.length = 0;
     shieldActive = false;
     shieldEndTime = 0;
     score = 0;
+    startTime = Date.now();
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
+    // Reset bug speed and spawn interval using module function
+    bugsModule.resetBugs();
+    bulletLineCount = 1;
+        endTime = null;
 }
 
 // Handle keyboard input
 const keys = {};
 document.addEventListener('keydown', (e) => {
     keys[e.key.toLowerCase()] = true;
-    // Spacebar shoots or resets game
     if (e.code === 'Space') {
         if (gameOver) {
             resetGame();
@@ -76,27 +138,48 @@ document.addEventListener('keyup', (e) => {
 function checkCollisions() {
     if (gameOver) return;
     // Check bug-player collision
-    for (let i = bugs.length - 1; i >= 0; i--) {
-        const bug = bugs[i];
+    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
+        const bug = bugsModule.bugs[i];
         if (
             bug.x < player.x + player.width &&
             bug.x + bug.width > player.x &&
             bug.y < player.y + player.height &&
             bug.y + bug.height > player.y
         ) {
-            bugs.splice(i, 1);
-            if (!(shieldActive && (Date.now() < shieldEndTime))) {
+            // Only trigger explosion and shield if not already shielded
+            if (!shieldActive || Date.now() > shieldEndTime) {
+                // Massive explosion and shield buff on damage
+                const explosionRadius = 180;
+                const px = player.x + player.width / 2;
+                const py = player.y + player.height / 2;
+                for (let j = bugsModule.bugs.length - 1; j >= 0; j--) {
+                    const bug = bugsModule.bugs[j];
+                    const bx = bug.x + bug.width / 2;
+                    const by = bug.y + bug.height / 2;
+                    const dist = Math.hypot(px - bx, py - by);
+                    if (dist < explosionRadius) {
+                        addExplosion(bx, by);
+                        bugsModule.bugs.splice(j, 1);
+                    }
+                }
+                // Massive explosion at player
+                addExplosion(px, py);
+                // Grant shield buff
+                shieldActive = true;
+                shieldEndTime = Date.now() + SHIELD_DURATION_MS;
+                // Lose life
                 lives--;
                 if (lives <= 0) {
                     lives = 0;
                     gameOver = true;
+                    endTime = Date.now();
                 }
             }
         }
     }
     // Check bullet-bug collision
-    for (let i = bugs.length - 1; i >= 0; i--) {
-        const bug = bugs[i];
+    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
+        const bug = bugsModule.bugs[i];
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
             if (
@@ -107,7 +190,7 @@ function checkCollisions() {
             ) {
                 // Explosion at bug center
                 addExplosion(bug.x + bug.width / 2, bug.y + bug.height / 2);
-                bugs.splice(i, 1);
+                bugsModule.bugs.splice(i, 1);
                 bullets.splice(j, 1);
                 score += 100;
                 break;
@@ -131,6 +214,9 @@ function checkCollisions() {
                 shieldActive = true;
                 shieldEndTime = Date.now() + SHIELD_DURATION_MS;
             }
+            if (p.type === 'green') {
+                bulletLineCount++;
+            }
             powerups.splice(i, 1);
         }
     }
@@ -141,30 +227,89 @@ function gameLoop() {
     if (!gameOver) {
         updatePlayer(keys, canvas);
         updateBullets();
-        updateBugs(canvas, gameOver);
+        bugsModule.updateBugs(canvas, gameOver);
         updatePowerups(canvas, gameOver);
         updateExplosions();
         checkCollisions();
-        // Handle shooting if spacebar is held
-        if (shooting && Date.now() - lastShotTime > SHOOT_INTERVAL) {
-            shootBullet(player);
+    // Fire rate slows by 20% per upgrade
+    const upgradeCount = bulletLineCount - 1;
+    const shootInterval = Math.round(BASE_SHOOT_INTERVAL * Math.pow(1.20, upgradeCount));
+        if (shooting && Date.now() - lastShotTime > shootInterval) {
+            shootBullet(player, bulletLineCount);
             lastShotTime = Date.now();
         }
     }
     drawPlayer(ctx, playerImg, shieldActive, shieldEndTime);
     drawBullets(ctx);
-    drawBugs(ctx, bugImg);
+    bugsModule.drawBugs(ctx, bugImg);
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
+    let secondsAlive;
+    if (gameOver && endTime) {
+        secondsAlive = Math.floor((endTime - startTime) / 1000);
+        // Save score to scoreboard.json if not already saved for this game over
+        if (!window._scoreSaved) {
+            window._scoreSaved = true;
+            saveScore(playerName, score, secondsAlive);
+        }
+    } else {
+        secondsAlive = Math.floor((Date.now() - startTime) / 1000);
+        window._scoreSaved = false;
+    }
     drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas);
-    drawScore(ctx, score);
+    drawScore(ctx, score, secondsAlive);
+
+// Save score to scoreboard.json
+function saveScore(name, score, time) {
+    // Try to use Node.js fs if available (for local dev)
+    function insertScore(scores, entry) {
+        scores.push(entry);
+    scores.sort((a, b) => b.score - a.score);
+    if (scores.length > 5) scores.length = 5;
+        return scores;
+    }
+    if (typeof require === 'function') {
+        try {
+            const fs = require('fs');
+            const path = 'scoreboard.json';
+            let scores = [];
+            if (fs.existsSync(path)) {
+                scores = JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+            // Only save if score is high enough
+            if (scores.length < 5 || score > (scores[4]?.score ?? -Infinity)) {
+                scores = insertScore(scores, { name, score, time, date: new Date().toISOString() });
+            }
+            // Always keep only top 5
+            scores.sort((a, b) => b.score - a.score);
+            if (scores.length > 5) scores.length = 5;
+            fs.writeFileSync(path, JSON.stringify(scores, null, 2));
+        } catch (e) {
+            console.error('Failed to save score:', e);
+        }
+    } else {
+        // Fallback: save to localStorage
+        let scores = [];
+        try {
+            scores = JSON.parse(localStorage.getItem('vatitflight_scores') || '[]');
+        } catch {}
+        if (scores.length < 5 || score > (scores[4]?.score ?? -Infinity)) {
+            scores = insertScore(scores, { name, score, time, date: new Date().toISOString() });
+        }
+        // Always keep only top 5
+    scores.sort((a, b) => b.score - a.score);
+    if (scores.length > 7) scores.length = 7;
+        localStorage.setItem('vatitflight_scores', JSON.stringify(scores));
+    }
+    renderScoreboard();
+}
     if (gameOver) {
         ctx.save();
-        ctx.font = 'bold 48px Arial';
+        ctx.font = 'bold 48px Orbitron, Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-        ctx.font = 'bold 24px Arial';
+        ctx.font = 'bold 24px Orbitron, Arial, sans-serif';
         ctx.fillText('Press Space to Restart', canvas.width / 2, canvas.height / 2 + 50);
         ctx.restore();
     }
