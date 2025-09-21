@@ -24,12 +24,15 @@ document.addEventListener('keydown', (e) => {
         if (gameOver) {
             resetGame();
         } else {
-            shootBullet();
+            shooting = true;
         }
     }
 });
 document.addEventListener('keyup', (e) => {
     keys[e.key.toLowerCase()] = false;
+    if (e.code === 'Space') {
+        shooting = false;
+    }
 });
 
 function updatePlayer() {
@@ -124,9 +127,10 @@ let gameOver = false;
 const bugs = [];
 const BUG_WIDTH = 60;
 const BUG_HEIGHT = 60;
-const BUG_SPEED = 3;
+let bugSpeed = 1.5; // Lowered initial speed by half
+let lastSpeedIncreaseTime = Date.now();
 let bugSpawnTimer = 0;
-const BUG_SPAWN_INTERVAL = 60; // frames
+let bugSpawnInterval = 10; // Doubled density (was 20)
 
 // Load bug image
 const bugImg = new Image();
@@ -136,8 +140,8 @@ bugImg.src = 'icons/bug.png';
 const powerups = [];
 const POWERUP_WIDTH = 40;
 const POWERUP_HEIGHT = 40;
-const POWERUP_SPEED = 4;
-const POWERUP_SPAWN_INTERVAL = 180; // frames
+const POWERUP_SPEED = 2; // Lowered speed by half
+const POWERUP_SPAWN_INTERVAL = 300; // 5 seconds at 60fps
 let powerupSpawnTimer = 0;
 
 // Load powerup images
@@ -194,16 +198,22 @@ function spawnBug() {
 
 function updateBugs() {
     bugSpawnTimer++;
-    if (bugSpawnTimer >= BUG_SPAWN_INTERVAL && !gameOver) {
+    if (bugSpawnTimer >= bugSpawnInterval && !gameOver) {
         spawnBug();
         bugSpawnTimer = 0;
     }
     for (let i = bugs.length - 1; i >= 0; i--) {
-        bugs[i].y += BUG_SPEED;
+        bugs[i].y += bugSpeed;
         // Remove bug if off screen
         if (bugs[i].y > canvas.height) {
             bugs.splice(i, 1);
         }
+    }
+    // Increase bug speed by 5% every second and adjust spawn rate
+    if (Date.now() - lastSpeedIncreaseTime >= 1000) {
+        bugSpeed *= 1.05;
+        bugSpawnInterval = Math.max(1, Math.round(bugSpawnInterval / 1.05));
+        lastSpeedIncreaseTime = Date.now();
     }
 }
 
@@ -213,9 +223,12 @@ function spawnPowerup() {
     // Randomly choose powerup type
     const types = ['red', 'blue', 'green'];
     const type = types[Math.floor(Math.random() * types.length)];
+    // Only spawn in bottom half of screen
+    const minY = canvas.height / 2;
+    const maxY = canvas.height - POWERUP_HEIGHT - 50;
     powerups.push({
         x: fromLeft ? -POWERUP_WIDTH : canvas.width,
-        y: Math.random() * (canvas.height - POWERUP_HEIGHT - 100) + 50,
+        y: Math.random() * (maxY - minY) + minY,
         width: POWERUP_WIDTH,
         height: POWERUP_HEIGHT,
         dx: fromLeft ? POWERUP_SPEED : -POWERUP_SPEED,
@@ -358,6 +371,7 @@ function checkCollisions() {
             p.y < player.y + player.height &&
             p.y + p.height > player.y
         ) {
+            // Apply powerup effects
             if (p.type === 'red' && lives < MAX_LIVES) {
                 lives++;
             }
@@ -384,6 +398,10 @@ function resetGame() {
     player.y = canvas.height - PLAYER_HEIGHT - 10;
 }
 
+let shooting = false;
+let lastShotTime = 0;
+const SHOOT_INTERVAL = 150; // ms between shots
+
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!gameOver) {
@@ -393,6 +411,11 @@ function gameLoop() {
         updatePowerups();
         updateExplosions();
         checkCollisions();
+        // Handle shooting if spacebar is held
+        if (shooting && Date.now() - lastShotTime > SHOOT_INTERVAL) {
+            shootBullet();
+            lastShotTime = Date.now();
+        }
     }
     drawPlayer();
     drawBullets();
