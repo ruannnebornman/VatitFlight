@@ -14,7 +14,7 @@ const MAX_LIVES = 3;
 let gameOver = false;
 let shooting = false;
 let lastShotTime = 0;
-const SHOOT_INTERVAL = 150; // ms between shots
+const SHOOT_INTERVAL = 75; // ms between shots, doubled fire rate
 
 // Shield state
 let shieldActive = false;

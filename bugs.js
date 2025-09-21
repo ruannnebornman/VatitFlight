@@ -24,7 +24,8 @@ export function spawnBug(canvas) {
 
 export function updateBugs(canvas, gameOver) {
     bugSpawnTimer++;
-    if (bugSpawnTimer >= bugSpawnInterval && !gameOver) {
+    // Cap max bugs to 100
+    if (bugSpawnTimer >= bugSpawnInterval && !gameOver && bugs.length < 100) {
         spawnBug(canvas);
         bugSpawnTimer = 0;
     }
@@ -57,8 +58,8 @@ export function updateBugs(canvas, gameOver) {
     }
     // Half the speed increase, double the density increase
     if (Date.now() - lastSpeedIncreaseTime >= 1000) {
-        bugSpeed *= 1.025; // Half the previous 5% increase
-        bugSpawnInterval = Math.max(1, Math.round(bugSpawnInterval / 2.1)); // Double the density increase
+        bugSpeed *= 1.025;
+        bugSpawnInterval = Math.max(1, Math.round(bugSpawnInterval / 2.1));
         lastSpeedIncreaseTime = Date.now();
     }
 }
