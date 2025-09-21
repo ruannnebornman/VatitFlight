@@ -72,7 +72,7 @@ let bulletLineCount = 1;
 // Shield state
 let shieldActive = false;
 let shieldEndTime = 0;
-const SHIELD_DURATION_MS = 5 * 1000; // 5000 seconds in ms
+const SHIELD_DURATION_MS = 2 * 1000; // 2 seconds in ms
 
 // Score
 let score = 0;
@@ -192,7 +192,7 @@ function checkCollisions() {
                 addExplosion(bug.x + bug.width / 2, bug.y + bug.height / 2);
                 bugsModule.bugs.splice(i, 1);
                 bullets.splice(j, 1);
-                score += 100;
+                score += 1;
                 break;
             }
         }
