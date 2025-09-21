@@ -64,7 +64,7 @@ const MAX_LIVES = 3;
 let gameOver = false;
 let shooting = false;
 let lastShotTime = 0;
-const SHOOT_INTERVAL = 75; // ms between shots, doubled fire rate
+const BASE_SHOOT_INTERVAL = 75; // ms between shots
 
 // Bullet line state
 let bulletLineCount = 1;
@@ -231,7 +231,10 @@ function gameLoop() {
         updatePowerups(canvas, gameOver);
         updateExplosions();
         checkCollisions();
-        if (shooting && Date.now() - lastShotTime > SHOOT_INTERVAL) {
+    // Fire rate slows by 20% per upgrade
+    const upgradeCount = bulletLineCount - 1;
+    const shootInterval = Math.round(BASE_SHOOT_INTERVAL * Math.pow(1.20, upgradeCount));
+        if (shooting && Date.now() - lastShotTime > shootInterval) {
             shootBullet(player, bulletLineCount);
             lastShotTime = Date.now();
         }

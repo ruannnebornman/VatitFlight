@@ -9,12 +9,19 @@ let lastPowerupType = null;
 
 export function spawnPowerup(canvas) {
     const fromLeft = Math.random() < 0.5;
-    const types = ['red', 'blue', 'green'];
-    let availableTypes = types;
-    if (lastPowerupType) {
-        availableTypes = types.filter(t => t !== lastPowerupType);
+    let type;
+    // 50% chance for green powerup
+    if (Math.random() < 0.5) {
+        type = 'green';
+    } else {
+        // Alternate between red and blue, avoid repeating last type
+        const types = ['red', 'blue'];
+        let availableTypes = types;
+        if (lastPowerupType && lastPowerupType !== 'green') {
+            availableTypes = types.filter(t => t !== lastPowerupType);
+        }
+        type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
     }
-    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
     lastPowerupType = type;
     const minY = canvas.height / 2;
     const maxY = canvas.height - POWERUP_HEIGHT - 50;
