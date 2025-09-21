@@ -1,6 +1,6 @@
 // Import modules
 import { PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player, updatePlayer, drawPlayer } from './player.js';
-import { BUG_WIDTH, BUG_HEIGHT, bugSpeed, lastSpeedIncreaseTime, bugSpawnTimer, bugSpawnInterval, bugs, spawnBug, updateBugs, drawBugs } from './bugs.js';
+import * as bugsModule from './bugs.js';
 import { POWERUP_WIDTH, POWERUP_HEIGHT, POWERUP_SPEED, POWERUP_SPAWN_INTERVAL, powerupSpawnTimer, powerups, spawnPowerup, updatePowerups, drawPowerups } from './powerups.js';
 import { BULLET_WIDTH, BULLET_HEIGHT, BULLET_SPEED, bullets, shootBullet, updateBullets, drawBullets } from './bullets.js';
 import { drawHearts, drawScore, explosions, EXPLOSION_DURATION, addExplosion, updateExplosions, drawExplosions } from './ui.js';
@@ -42,7 +42,7 @@ resetGame();
 function resetGame() {
     lives = MAX_LIVES;
     gameOver = false;
-    bugs.length = 0;
+    bugsModule.bugs.length = 0;
     bullets.length = 0;
     explosions.length = 0;
     powerups.length = 0;
@@ -51,6 +51,8 @@ function resetGame() {
     score = 0;
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
+    // Reset bug speed and spawn interval using module function
+    bugsModule.resetBugs();
 }
 
 // Handle keyboard input
@@ -76,15 +78,15 @@ document.addEventListener('keyup', (e) => {
 function checkCollisions() {
     if (gameOver) return;
     // Check bug-player collision
-    for (let i = bugs.length - 1; i >= 0; i--) {
-        const bug = bugs[i];
+    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
+        const bug = bugsModule.bugs[i];
         if (
             bug.x < player.x + player.width &&
             bug.x + bug.width > player.x &&
             bug.y < player.y + player.height &&
             bug.y + bug.height > player.y
         ) {
-            bugs.splice(i, 1);
+            bugsModule.bugs.splice(i, 1);
             if (!(shieldActive && (Date.now() < shieldEndTime))) {
                 lives--;
                 if (lives <= 0) {
@@ -95,8 +97,8 @@ function checkCollisions() {
         }
     }
     // Check bullet-bug collision
-    for (let i = bugs.length - 1; i >= 0; i--) {
-        const bug = bugs[i];
+    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
+        const bug = bugsModule.bugs[i];
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
             if (
@@ -107,7 +109,7 @@ function checkCollisions() {
             ) {
                 // Explosion at bug center
                 addExplosion(bug.x + bug.width / 2, bug.y + bug.height / 2);
-                bugs.splice(i, 1);
+                bugsModule.bugs.splice(i, 1);
                 bullets.splice(j, 1);
                 score += 100;
                 break;
@@ -141,7 +143,7 @@ function gameLoop() {
     if (!gameOver) {
         updatePlayer(keys, canvas);
         updateBullets();
-        updateBugs(canvas, gameOver);
+        bugsModule.updateBugs(canvas, gameOver);
         updatePowerups(canvas, gameOver);
         updateExplosions();
         checkCollisions();
@@ -153,7 +155,7 @@ function gameLoop() {
     }
     drawPlayer(ctx, playerImg, shieldActive, shieldEndTime);
     drawBullets(ctx);
-    drawBugs(ctx, bugImg);
+    bugsModule.drawBugs(ctx, bugImg);
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
     drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas);

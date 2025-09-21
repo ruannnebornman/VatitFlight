@@ -75,3 +75,9 @@ export function drawBugs(ctx, bugImg) {
         ctx.restore();
     });
 }
+
+export function resetBugs() {
+    bugSpeed = 1.5;
+    bugSpawnInterval = 10;
+    lastSpeedIncreaseTime = Date.now();
+}
