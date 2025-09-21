@@ -17,7 +17,7 @@ export function drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas) {
     if (shieldActive && (Date.now() < shieldEndTime)) {
         const secondsLeft = Math.ceil((shieldEndTime - Date.now()) / 1000);
         ctx.save();
-        ctx.font = 'bold 20px Arial';
+    ctx.font = '700 20px Orbitron, sans-serif';
         ctx.fillStyle = '#00f';
         ctx.textAlign = 'right';
         ctx.fillText('Shield: ' + secondsLeft + 's', canvas.width - 30, 65);
@@ -27,7 +27,7 @@ export function drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas) {
 
 export function drawScore(ctx, score, secondsAlive) {
     ctx.save();
-    ctx.font = 'bold 24px Arial';
+    ctx.font = '700 24px Orbitron, sans-serif';
     ctx.textAlign = 'left';
     // Draw less transparent black background rectangle, wider for long scores
     ctx.fillStyle = 'rgba(0,0,0,0.92)';

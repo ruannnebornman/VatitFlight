@@ -34,8 +34,8 @@ function renderScoreboard() {
     if (scores.length === 0) {
         html += '<div>No scores yet!</div>';
     } else {
-        scores.sort((a, b) => b.score - a.score);
-        scores.slice(0, 5).forEach(entry => {
+    scores.sort((a, b) => b.score - a.score);
+    scores.slice(0, 7).forEach(entry => {
             html += `<div class="score-entry">
                 <span class="score-name">${entry.name}</span><br>
                 <span class="score-score">Score: ${entry.score}</span><br>
@@ -146,8 +146,28 @@ function checkCollisions() {
             bug.y < player.y + player.height &&
             bug.y + bug.height > player.y
         ) {
-            bugsModule.bugs.splice(i, 1);
-            if (!(shieldActive && (Date.now() < shieldEndTime))) {
+            // Only trigger explosion and shield if not already shielded
+            if (!shieldActive || Date.now() > shieldEndTime) {
+                // Massive explosion and shield buff on damage
+                const explosionRadius = 180;
+                const px = player.x + player.width / 2;
+                const py = player.y + player.height / 2;
+                for (let j = bugsModule.bugs.length - 1; j >= 0; j--) {
+                    const bug = bugsModule.bugs[j];
+                    const bx = bug.x + bug.width / 2;
+                    const by = bug.y + bug.height / 2;
+                    const dist = Math.hypot(px - bx, py - by);
+                    if (dist < explosionRadius) {
+                        addExplosion(bx, by);
+                        bugsModule.bugs.splice(j, 1);
+                    }
+                }
+                // Massive explosion at player
+                addExplosion(px, py);
+                // Grant shield buff
+                shieldActive = true;
+                shieldEndTime = Date.now() + SHIELD_DURATION_MS;
+                // Lose life
                 lives--;
                 if (lives <= 0) {
                     lives = 0;
@@ -241,8 +261,8 @@ function saveScore(name, score, time) {
     // Try to use Node.js fs if available (for local dev)
     function insertScore(scores, entry) {
         scores.push(entry);
-        scores.sort((a, b) => b.score - a.score);
-        if (scores.length > 5) scores.length = 5;
+    scores.sort((a, b) => b.score - a.score);
+    if (scores.length > 5) scores.length = 5;
         return scores;
     }
     if (typeof require === 'function') {
@@ -274,19 +294,19 @@ function saveScore(name, score, time) {
             scores = insertScore(scores, { name, score, time, date: new Date().toISOString() });
         }
         // Always keep only top 5
-        scores.sort((a, b) => b.score - a.score);
-        if (scores.length > 5) scores.length = 5;
+    scores.sort((a, b) => b.score - a.score);
+    if (scores.length > 7) scores.length = 7;
         localStorage.setItem('vatitflight_scores', JSON.stringify(scores));
     }
     renderScoreboard();
 }
     if (gameOver) {
         ctx.save();
-        ctx.font = 'bold 48px Arial';
+        ctx.font = 'bold 48px Orbitron, Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-        ctx.font = 'bold 24px Arial';
+        ctx.font = 'bold 24px Orbitron, Arial, sans-serif';
         ctx.fillText('Press Space to Restart', canvas.width / 2, canvas.height / 2 + 50);
         ctx.restore();
     }

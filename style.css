@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
 
 body {
@@ -8,10 +9,11 @@ body {
     justify-content: flex-start;
     align-items: center;
     height: 100vh;
-    font-family: 'Orbitron', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
     overflow: hidden;
 }
 #gameCanvas {
+    font-family: 'Orbitron', sans-serif;
     background: #111;
     border: 2px solid #fff;
     display: block;
@@ -23,13 +25,13 @@ body {
     transform-origin: top left;
 }
 h1 {
-    font-family: 'Orbitron', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
     letter-spacing: 2px;
     color: #0ff;
     text-shadow: 0 0 8px #0ff, 0 0 16px #00f;
 }
 .gamelabel {
-    font-family: 'Orbitron', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
     color: #fff;
     text-shadow: 0 0 6px #0ff;
     font-size: 1.2em;
@@ -42,10 +44,10 @@ h1 {
 .scoreboard {
     background: rgba(0,0,0,0.92);
     color: #fff;
-    font-family: 'Orbitron', Arial, sans-serif;
+    font-family: 'Orbitron', sans-serif;
     border: 2px solid #0ff;
     border-radius: 12px;
-    margin-left: 32px;
+    margin-left: -72px;
     margin-top: 0;
     padding: 24px 16px;
     min-width: 260px;
