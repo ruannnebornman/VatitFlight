@@ -5,11 +5,17 @@ export const POWERUP_SPEED = 2;
 export const POWERUP_SPAWN_INTERVAL = 300;
 export let powerupSpawnTimer = 0;
 export const powerups = [];
+let lastPowerupType = null;
 
 export function spawnPowerup(canvas) {
     const fromLeft = Math.random() < 0.5;
     const types = ['red', 'blue', 'green'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    let availableTypes = types;
+    if (lastPowerupType) {
+        availableTypes = types.filter(t => t !== lastPowerupType);
+    }
+    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+    lastPowerupType = type;
     const minY = canvas.height / 2;
     const maxY = canvas.height - POWERUP_HEIGHT - 50;
     powerups.push({

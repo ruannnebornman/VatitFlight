@@ -16,6 +16,9 @@ let shooting = false;
 let lastShotTime = 0;
 const SHOOT_INTERVAL = 75; // ms between shots, doubled fire rate
 
+// Bullet line state
+let bulletLineCount = 1;
+
 // Shield state
 let shieldActive = false;
 let shieldEndTime = 0;
@@ -53,6 +56,7 @@ function resetGame() {
     player.y = canvas.height - PLAYER_HEIGHT - 10;
     // Reset bug speed and spawn interval using module function
     bugsModule.resetBugs();
+    bulletLineCount = 1;
 }
 
 // Handle keyboard input
@@ -132,6 +136,9 @@ function checkCollisions() {
                 shieldActive = true;
                 shieldEndTime = Date.now() + SHIELD_DURATION_MS;
             }
+            if (p.type === 'green') {
+                bulletLineCount++;
+            }
             powerups.splice(i, 1);
         }
     }
@@ -147,7 +154,7 @@ function gameLoop() {
         updateExplosions();
         checkCollisions();
         if (shooting && Date.now() - lastShotTime > SHOOT_INTERVAL) {
-            shootBullet(player);
+            shootBullet(player, bulletLineCount);
             lastShotTime = Date.now();
         }
     }
