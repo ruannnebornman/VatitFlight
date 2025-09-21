@@ -27,6 +27,9 @@ const SHIELD_DURATION_MS = 5 * 1000; // 5000 seconds in ms
 // Score
 let score = 0;
 
+// Track time alive
+let startTime = Date.now();
+
 // Load images
 const playerImg = new Image();
 playerImg.src = 'icons/player.png';
@@ -52,6 +55,7 @@ function resetGame() {
     shieldActive = false;
     shieldEndTime = 0;
     score = 0;
+    startTime = Date.now();
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
     // Reset bug speed and spawn interval using module function
@@ -164,7 +168,14 @@ function gameLoop() {
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
     drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas);
-    drawScore(ctx, score);
+    let secondsAlive;
+    if (gameOver) {
+        secondsAlive = Math.floor((shieldEndTime ? shieldEndTime : Date.now()) - startTime) / 1000;
+        secondsAlive = Math.floor(secondsAlive);
+    } else {
+        secondsAlive = Math.floor((Date.now() - startTime) / 1000);
+    }
+    drawScore(ctx, score, secondsAlive);
     if (gameOver) {
         ctx.save();
         ctx.font = 'bold 48px Arial';

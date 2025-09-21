@@ -25,12 +25,18 @@ export function drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas) {
     }
 }
 
-export function drawScore(ctx, score) {
+export function drawScore(ctx, score, secondsAlive) {
     ctx.save();
     ctx.font = 'bold 24px Arial';
-    ctx.fillStyle = '#fff';
     ctx.textAlign = 'left';
-    ctx.fillText('Score: ' + score, 20, 40);
+    // Draw less transparent black background rectangle
+    ctx.fillStyle = 'rgba(0,0,0,0.92)';
+    ctx.fillRect(10, 10, 260, 40);
+    // Draw score and seconds on the same line
+    ctx.fillStyle = '#fff';
+    let scoreText = 'Score: ' + score;
+    let timeText = ' | Time: ' + secondsAlive + 's';
+    ctx.fillText(scoreText + timeText, 20, 38);
     ctx.restore();
 }
 
