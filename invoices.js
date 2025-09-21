@@ -24,8 +24,8 @@ export function spawnInvoice(canvas) {
 
 export function updateInvoices(canvas, gameOver) {
     invoiceSpawnTimer++;
-    // Cap max invoices to 100
-    if (invoiceSpawnTimer >= invoiceSpawnInterval && !gameOver && invoices.length < 100) {
+    // Cap max invoices to 150 (50% more)
+    if (invoiceSpawnTimer >= invoiceSpawnInterval && !gameOver && invoices.length < 150) {
         spawnInvoice(canvas);
         invoiceSpawnTimer = 0;
     }
@@ -71,8 +71,8 @@ export function drawInvoices(ctx, invoiceImg) {
             invoiceImg,
             invoice.x,
             invoice.y,
-            invoice.width,
-            invoice.height
+            invoice.width / 2,
+            invoice.height / 2
         );
         ctx.restore();
     });
