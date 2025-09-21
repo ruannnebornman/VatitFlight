@@ -9,6 +9,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game state
+let endTime = null;
 let lives = 3;
 const MAX_LIVES = 3;
 let gameOver = false;
@@ -61,6 +62,7 @@ function resetGame() {
     // Reset bug speed and spawn interval using module function
     bugsModule.resetBugs();
     bulletLineCount = 1;
+        endTime = null;
 }
 
 // Handle keyboard input
@@ -99,6 +101,7 @@ function checkCollisions() {
                 if (lives <= 0) {
                     lives = 0;
                     gameOver = true;
+                    endTime = Date.now();
                 }
             }
         }
@@ -167,14 +170,12 @@ function gameLoop() {
     bugsModule.drawBugs(ctx, bugImg);
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
-    drawHearts(ctx, lives, shieldActive, shieldEndTime, canvas);
     let secondsAlive;
-    if (gameOver) {
-        secondsAlive = Math.floor((shieldEndTime ? shieldEndTime : Date.now()) - startTime) / 1000;
-        secondsAlive = Math.floor(secondsAlive);
-    } else {
-        secondsAlive = Math.floor((Date.now() - startTime) / 1000);
-    }
+        if (gameOver && endTime) {
+            secondsAlive = Math.floor((endTime - startTime) / 1000);
+        } else {
+            secondsAlive = Math.floor((Date.now() - startTime) / 1000);
+        }
     drawScore(ctx, score, secondsAlive);
     if (gameOver) {
         ctx.save();

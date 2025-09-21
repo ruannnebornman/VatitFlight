@@ -29,9 +29,9 @@ export function drawScore(ctx, score, secondsAlive) {
     ctx.save();
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'left';
-    // Draw less transparent black background rectangle
+    // Draw less transparent black background rectangle, wider for long scores
     ctx.fillStyle = 'rgba(0,0,0,0.92)';
-    ctx.fillRect(10, 10, 260, 40);
+    ctx.fillRect(10, 10, 400, 40);
     // Draw score and seconds on the same line
     ctx.fillStyle = '#fff';
     let scoreText = 'Score: ' + score;
