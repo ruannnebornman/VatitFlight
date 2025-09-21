@@ -1,6 +1,6 @@
 // Import modules
 import { PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player, updatePlayer, drawPlayer } from './player.js';
-import * as bugsModule from './bugs.js';
+import * as invoicesModule from './invoices.js';
 import { POWERUP_WIDTH, POWERUP_HEIGHT, POWERUP_SPEED, POWERUP_SPAWN_INTERVAL, powerupSpawnTimer, powerups, spawnPowerup, updatePowerups, drawPowerups } from './powerups.js';
 import { BULLET_WIDTH, BULLET_HEIGHT, BULLET_SPEED, bullets, shootBullet, updateBullets, drawBullets } from './bullets.js';
 import { drawHearts, drawScore, explosions, EXPLOSION_DURATION, addExplosion, updateExplosions, drawExplosions } from './ui.js';
@@ -83,8 +83,8 @@ let startTime = Date.now();
 // Load images
 const playerImg = new Image();
 playerImg.src = 'icons/player.png';
-const bugImg = new Image();
-bugImg.src = 'icons/bug.png';
+const invoiceImg = new Image();
+invoiceImg.src = 'icons/invoice.png';
 const powerupRedImg = new Image();
 powerupRedImg.src = 'icons/powerupRed.png';
 const powerupBlueImg = new Image();
@@ -100,7 +100,7 @@ renderScoreboard();
 function resetGame() {
     lives = MAX_LIVES;
     gameOver = false;
-    bugsModule.bugs.length = 0;
+    invoicesModule.invoices.length = 0;
     bullets.length = 0;
     explosions.length = 0;
     powerups.length = 0;
@@ -110,8 +110,8 @@ function resetGame() {
     startTime = Date.now();
     player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
     player.y = canvas.height - PLAYER_HEIGHT - 10;
-    // Reset bug speed and spawn interval using module function
-    bugsModule.resetBugs();
+    // Reset invoice speed and spawn interval using module function
+    invoicesModule.resetInvoices();
     bulletLineCount = 1;
         endTime = null;
 }
@@ -137,14 +137,14 @@ document.addEventListener('keyup', (e) => {
 
 function checkCollisions() {
     if (gameOver) return;
-    // Check bug-player collision
-    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
-        const bug = bugsModule.bugs[i];
+    // Check invoice-player collision
+    for (let i = invoicesModule.invoices.length - 1; i >= 0; i--) {
+        const invoice = invoicesModule.invoices[i];
         if (
-            bug.x < player.x + player.width &&
-            bug.x + bug.width > player.x &&
-            bug.y < player.y + player.height &&
-            bug.y + bug.height > player.y
+            invoice.x < player.x + player.width &&
+            invoice.x + invoice.width > player.x &&
+            invoice.y < player.y + player.height &&
+            invoice.y + invoice.height > player.y
         ) {
             // Only trigger explosion and shield if not already shielded
             if (!shieldActive || Date.now() > shieldEndTime) {
@@ -152,14 +152,14 @@ function checkCollisions() {
                 const explosionRadius = 180;
                 const px = player.x + player.width / 2;
                 const py = player.y + player.height / 2;
-                for (let j = bugsModule.bugs.length - 1; j >= 0; j--) {
-                    const bug = bugsModule.bugs[j];
-                    const bx = bug.x + bug.width / 2;
-                    const by = bug.y + bug.height / 2;
-                    const dist = Math.hypot(px - bx, py - by);
+                for (let j = invoicesModule.invoices.length - 1; j >= 0; j--) {
+                    const invoice = invoicesModule.invoices[j];
+                    const ix = invoice.x + invoice.width / 2;
+                    const iy = invoice.y + invoice.height / 2;
+                    const dist = Math.hypot(px - ix, py - iy);
                     if (dist < explosionRadius) {
-                        addExplosion(bx, by);
-                        bugsModule.bugs.splice(j, 1);
+                        addExplosion(ix, iy);
+                        invoicesModule.invoices.splice(j, 1);
                     }
                 }
                 // Massive explosion at player
@@ -177,20 +177,20 @@ function checkCollisions() {
             }
         }
     }
-    // Check bullet-bug collision
-    for (let i = bugsModule.bugs.length - 1; i >= 0; i--) {
-        const bug = bugsModule.bugs[i];
+    // Check bullet-invoice collision
+    for (let i = invoicesModule.invoices.length - 1; i >= 0; i--) {
+        const invoice = invoicesModule.invoices[i];
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
             if (
-                bullet.x < bug.x + bug.width &&
-                bullet.x + bullet.width > bug.x &&
-                bullet.y < bug.y + bug.height &&
-                bullet.y + bullet.height > bug.y
+                bullet.x < invoice.x + invoice.width &&
+                bullet.x + bullet.width > invoice.x &&
+                bullet.y < invoice.y + invoice.height &&
+                bullet.y + bullet.height > invoice.y
             ) {
-                // Explosion at bug center
-                addExplosion(bug.x + bug.width / 2, bug.y + bug.height / 2);
-                bugsModule.bugs.splice(i, 1);
+                // Explosion at invoice center
+                addExplosion(invoice.x + invoice.width / 2, invoice.y + invoice.height / 2);
+                invoicesModule.invoices.splice(i, 1);
                 bullets.splice(j, 1);
                 score += 1;
                 break;
@@ -202,9 +202,9 @@ function checkCollisions() {
         const p = powerups[i];
         if (
             p.x < player.x + player.width &&
-            p.x + p.width > player.x &&
+            p.x + p.width * 4 > player.x &&
             p.y < player.y + player.height &&
-            p.y + p.height > player.y
+            p.y + p.height * 4 > player.y
         ) {
             // Apply powerup effects
             if (p.type === 'red' && lives < MAX_LIVES) {
@@ -227,7 +227,7 @@ function gameLoop() {
     if (!gameOver) {
         updatePlayer(keys, canvas);
         updateBullets();
-        bugsModule.updateBugs(canvas, gameOver);
+        invoicesModule.updateInvoices(canvas, gameOver);
         updatePowerups(canvas, gameOver);
         updateExplosions();
         checkCollisions();
@@ -241,7 +241,7 @@ function gameLoop() {
     }
     drawPlayer(ctx, playerImg, shieldActive, shieldEndTime);
     drawBullets(ctx);
-    bugsModule.drawBugs(ctx, bugImg);
+    invoicesModule.drawInvoices(ctx, invoiceImg);
     drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg);
     drawExplosions(ctx);
     let secondsAlive;

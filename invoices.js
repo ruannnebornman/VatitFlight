@@ -71,8 +71,8 @@ export function drawInvoices(ctx, invoiceImg) {
             invoiceImg,
             invoice.x,
             invoice.y,
-            invoice.width,
-            invoice.height
+            invoice.width / 2,
+            invoice.height / 2
         );
         ctx.restore();
     });

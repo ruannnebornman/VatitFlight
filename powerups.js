@@ -57,7 +57,7 @@ export function drawPowerups(ctx, powerupRedImg, powerupBlueImg, powerupGreenImg
         else if (powerup.type === 'green') img = powerupGreenImg;
         if (img) {
             ctx.save();
-            ctx.drawImage(img, powerup.x, powerup.y, powerup.width, powerup.height);
+            ctx.drawImage(img, powerup.x, powerup.y, powerup.width * 4, powerup.height * 4);
             ctx.restore();
         }
     });
