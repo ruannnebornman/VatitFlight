@@ -9,15 +9,15 @@ export const bugs = [];
 
 export function spawnBug(canvas) {
     const x = Math.random() * (canvas.width - BUG_WIDTH);
-    // Random initial direction, but always downward (angle between 45deg and 135deg)
-    const angle = Math.random() * Math.PI + Math.PI / 4; // 45deg to 135deg
+    // Random initial direction, evenly distributed between down-right and down-left (45deg to 135deg)
+    const angle = Math.random() * (Math.PI / 2) + Math.PI / 4; // 45deg to 135deg
     bugs.push({
         x,
         y: -BUG_HEIGHT,
         width: BUG_WIDTH,
         height: BUG_HEIGHT,
         dx: Math.cos(angle) * bugSpeed,
-        dy: Math.abs(Math.sin(angle) * bugSpeed), // always positive (down)
+        dy: Math.sin(angle) * bugSpeed, // always positive (down)
         directionTimer: Math.floor(Math.random() * 60) + 60 // 1-2 seconds
     });
 }
@@ -45,9 +45,9 @@ export function updateBugs(canvas, gameOver) {
         // Change direction after timer
         bug.directionTimer--;
         if (bug.directionTimer <= 0) {
-            const angle = Math.random() * Math.PI + Math.PI / 4; // 45deg to 135deg
+            const angle = Math.random() * (Math.PI / 2) + Math.PI / 4; // 45deg to 135deg
             bug.dx = Math.cos(angle) * bugSpeed;
-            bug.dy = Math.abs(Math.sin(angle) * bugSpeed); // always positive (down)
+            bug.dy = Math.sin(angle) * bugSpeed;
             bug.directionTimer = Math.floor(Math.random() * 60) + 60;
         }
         // Remove bug if off bottom
@@ -55,9 +55,10 @@ export function updateBugs(canvas, gameOver) {
             bugs.splice(i, 1);
         }
     }
+    // Half the speed increase, double the density increase
     if (Date.now() - lastSpeedIncreaseTime >= 1000) {
-        bugSpeed *= 1.05;
-        bugSpawnInterval = Math.max(1, Math.round(bugSpawnInterval / 1.05));
+        bugSpeed *= 1.025; // Half the previous 5% increase
+        bugSpawnInterval = Math.max(1, Math.round(bugSpawnInterval / 2.1)); // Double the density increase
         lastSpeedIncreaseTime = Date.now();
     }
 }

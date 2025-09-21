@@ -59,7 +59,6 @@ function resetGame() {
 const keys = {};
 document.addEventListener('keydown', (e) => {
     keys[e.key.toLowerCase()] = true;
-    // Spacebar shoots or resets game
     if (e.code === 'Space') {
         if (gameOver) {
             resetGame();
@@ -147,7 +146,6 @@ function gameLoop() {
         updatePowerups(canvas, gameOver);
         updateExplosions();
         checkCollisions();
-        // Handle shooting if spacebar is held
         if (shooting && Date.now() - lastShotTime > SHOOT_INTERVAL) {
             shootBullet(player);
             lastShotTime = Date.now();
